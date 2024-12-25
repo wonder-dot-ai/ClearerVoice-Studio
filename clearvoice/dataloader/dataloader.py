@@ -36,11 +36,11 @@ def audioread(path, sampling_rate):
     data, fs = sf.read(path)
 
     # convert to mono channel
-    if len(audio.shape) >1:
-        if audio.shape[0] > audio.shape[1]:
-            audio = audio[:, 0] 
+    if len(data.shape) >1:
+        if data.shape[0] > data.shape[1]:
+            data = data[:, 0] 
         else:
-            audio = audio[0, :] 
+            data = data[0, :] 
     
     # Normalize the audio data.
     data, scalar = audio_norm(data)
