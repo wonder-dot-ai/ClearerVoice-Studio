@@ -24,12 +24,12 @@ MAX_WAV_VALUE = 32768.0
 
 def audioread(path, sampling_rate):
     data, fs = sf.read(path)    
-    data = audio_norm(data)
+    data, scalar = audio_norm(data)
     if fs != sampling_rate:
         data = librosa.resample(data, orig_sr=fs, target_sr=sampling_rate)
     if len(data.shape) >1:
         data = data[:, 0]    
-    return  data
+    return  data, scalar
 
 def audio_norm(x):
     rms = (x ** 2).mean() ** 0.5
@@ -62,8 +62,8 @@ class DataReader(object):
 
 class Wave_Processor(object):
     def process(self, path, segment_length, sampling_rate):         
-        wave_inputs = audioread(path['inputs'], sampling_rate)
-        wave_labels = audioread(path['labels'], sampling_rate)
+        wave_inputs,_ = audioread(path['inputs'], sampling_rate)
+        wave_labels,_ = audioread(path['labels'], sampling_rate)
         len_wav = wave_labels.shape[0]
         if wave_inputs.shape[0] < segment_length:
             padded_inputs = np.zeros(segment_length, dtype=np.float32)
