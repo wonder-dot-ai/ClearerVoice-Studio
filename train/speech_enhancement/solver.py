@@ -233,7 +233,7 @@ class Solver(object):
                 optim_state = self.optimizer.state_dict()
                 optim_state['param_groups'][0]['lr'] *= 0.5
                 self.optimizer.load_state_dict(optim_state)
-                if self.print: print('Learning rate adjusted to: {lr:.6f}'.format(lr=optim_state['param_groups'][0]['lr'])))
+                if self.print: print('Learning rate adjusted to: {lr:.6f}'.format(lr=optim_state['param_groups'][0]['lr']))
                 
 
             if self.print:
