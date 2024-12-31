@@ -111,9 +111,11 @@ We evaluated our released speech enhancement models on the popular benchmarks: [
 **VoiceBank+DEMAND testset (tested on 48kHz)** (We included our evaluations on other open-sourced models using SpeechScore)
 |Model               |PESQ    |NB_PESQ |CBAK    |COVL    |CSIG    |STOI    |SISDR    |SNR      |SRMR    |SSNR    |P808_MOS|SIG     |BAK     |OVRL    |ISR      |SAR      |SDR      |FWSEGSNR |LLR     |LSD     |MCD|
 |-----               |---     |------- |----    |----    |----    |----    |-----    |---      |----    |----    |------  |---     |---     |----    |---      |---      |---      |-------- |---     |---     |---|
-|Noisy               |1.97    | 2.87   |2.79    |2.70    |3.32    |0.92    |8.39     |9.30     |7.81    |6.13    |3.07    |3.35    |3.12    |2.69    |33.75    |8.42     |8.39     |13.98    |**0.75**|**1.45**|5.41|
-|MossFormer2_SE_48K  |**3.15**|**3.77**|**3.33**|**3.64**|**4.23**|**0.95**|**19.36**|**19.22**|**9.61**|7.03    |**3.53**|  3.41  |**4.10**|**3.15**|**4.08**|**21.23** |4.06     |14.45    |NA      |1.86    |**0.53**|
-|resemble_enhance    |2.84    | 3.58   |3.14    |NA      |NA      |0.94    |12.42    |12.79    |9.08    |**7.07**|**3.53**|**3.42**|  3.99  |3.12    |13.62    |12.66    |**10.31**|**14.56**|1.50    |1.66    |  1.54  |
+|Noisy               |1.97    | 2.87   |2.79    |2.70    |3.32    |0.92    |8.39     |9.30     |7.81    |6.13    |3.07    |3.35    |3.12    |2.69    |33.75    |8.42     |8.39     |13.98    |0.75    |1.45    |5.41|
+|MossFormer2_SE_48K  |**3.15**|**3.77**|**3.33**|**3.64**|**4.23**|**0.95**|**19.36**|**19.22**|9.61    |7.03    |**3.53**|  3.41  |**4.10**|**3.15**|**4.08**|**21.23** |4.06     |14.45    |NA      |1.86    |**0.53**|
+|Resemble_enhance    |2.84    | 3.58   |3.14    |NA      |NA      |0.94    |12.42    |12.79    |9.08    |7.07    |**3.53**|**3.42**|  3.99  |3.12    |13.62    |12.66    |10.31    |14.56    |1.50    |1.66    |  1.54  |
+|DeepFilterNet       |3.03    | 3.71   |3.29    |3.55    |4.20    |0.94    |15.71    |15.66    |**9.66**|**7.19**|3.47    |3.40    |4.00    |3.10    |28.01    |16.20    |**15.79**|**15.69**|**0.55**|**0.94**|  1.77  |
 
 - Resemble_enhance ([Github](https://github.com/resemble-ai/resemble-enhance)) is an open-sourced 44.1kHz pure speech enhancement platform from Resemble-AI since 2023, we resampled to 48khz before making evaluation.
+- DeepFilterNet ([Github](https://github.com/Rikorose/DeepFilterNet)) is a low complexity speech enhancement framework for Full-Band audio (48kHz) using on deep filtering. 
 > **Note:** We observed anomalies in two speech metrics, LLR and LSD, after processing with the 48 kHz models. We will further investigate the issue to identify the cause.
