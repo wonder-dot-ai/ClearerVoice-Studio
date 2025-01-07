@@ -13,12 +13,25 @@ import sys
 import librosa
 import mimetypes
 
+def get_file_extension(file_path):
+    """
+    Return an audio file extension
+    """
+
+    _, ext = os.path.splitext(file_path)
+    return ext
+
 def is_audio_file(file_path):
     """
     Check if the given file_path is an audio file
     Return True if it is an audio file, otherwise, return False
     """
-    
+    file_ext = ["wav", "aac", "ac3", "aiff", "flac", "m4a", "mp3", "ogg", "opus", "wma", "webm"]
+
+    ext = get_file_extension(file_path)
+    if ext.replace('.','') in file_ext:
+        return True
+
     mime_type, _ = mimetypes.guess_type(file_path)
     if mime_type and mime_type.startswith('audio'):
         return True

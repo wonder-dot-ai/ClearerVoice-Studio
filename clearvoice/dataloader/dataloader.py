@@ -12,21 +12,13 @@ import os
 import sys
 sys.path.append(os.path.dirname(__file__))
 from pydub import AudioSegment
-from dataloader.misc import read_and_config_file
+from dataloader.misc import read_and_config_file, get_file_extension
 import librosa
 import random
 EPS = 1e-6
 MAX_WAV_VALUE_16B = 32768.0
 MAX_WAV_VALUE_32B = 2147483648.0
-
-def get_file_extension(file_path):
-    """
-    Return an audio file extension
-    """
-    
-    _, ext = os.path.splitext(file_path)
-    return ext
-    
+   
 def audioread_archieved(path, sampling_rate):
     """
     Reads an audio file from the specified path, normalizes the audio, 
