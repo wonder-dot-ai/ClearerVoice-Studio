@@ -2,7 +2,7 @@ from clearvoice import ClearVoice  # Import the ClearVoice class for speech proc
 
 if __name__ == '__main__':
     ## ----------------- Demo One: Using a Single Model ----------------------
-    if False:  # This block demonstrates how to use a single model for speech enhancement
+    if True:  # This block demonstrates how to use a single model for speech enhancement
         # Initialize ClearVoice for the task of speech enhancement using the MossFormer2_SE_48K model
         myClearVoice = ClearVoice(task='speech_enhancement', model_names=['MossFormer2_SE_48K'])
 
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
 
     ## ---------------- Demo Two: Using Multiple Models -----------------------
-    if True:  # This block demonstrates how to use multiple models for speech enhancement
+    if False:  # This block demonstrates how to use multiple models for speech enhancement
         # Initialize ClearVoice for the task of speech enhancement using two models: MossFormer2_SE_48K and FRCRN_SE_16K
         myClearVoice = ClearVoice(task='speech_enhancement', model_names=['MossFormer2_SE_48K', 'FRCRN_SE_16K'])
 

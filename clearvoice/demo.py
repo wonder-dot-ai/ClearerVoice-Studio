@@ -4,10 +4,24 @@ from clearvoice import ClearVoice
 if True:
     myClearVoice = ClearVoice(task='speech_enhancement', model_names=['MossFormer2_SE_48K'])
 
-    ##1sd calling method: process the waveform from input.wav and return output waveform, then write to output_MossFormer2_SE_48K.wav
+    ##1sd calling method: process the waveform from input file and return output waveform, then write to output_MossFormer2_SE_48K_xxx with the same audio format
     output_wav = myClearVoice(input_path='samples/input.wav', online_write=False)
-    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K.wav')
-
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_input.wav')
+    output_wav = myClearVoice(input_path='samples/speech2.wav', online_write=False)
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech2.wav')
+    output_wav = myClearVoice(input_path='samples/speech1.mp3', online_write=False)
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech1.mp3')
+    output_wav = myClearVoice(input_path='samples/speech1.flac', online_write=False)
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech1.flac')
+    output_wav = myClearVoice(input_path='samples/speech1.ogg', online_write=False)
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech1.ogg')
+    output_wav = myClearVoice(input_path='samples/speech1.wav', online_write=False)
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech1.wav')
+    output_wav = myClearVoice(input_path='samples/speech2.aac', online_write=False)
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech2.aac')
+    output_wav = myClearVoice(input_path='samples/speech2.aiff', online_write=False)
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech2.aiff')
+    
     ##2nd calling method: process all wav files in 'path_to_input_wavs/' and write outputs to 'path_to_output_wavs'
     myClearVoice(input_path='samples/path_to_input_wavs', online_write=True, output_path='samples/path_to_output_wavs')
 
@@ -19,7 +33,7 @@ if False:
     myClearVoice = ClearVoice(task='speech_enhancement', model_names=['FRCRN_SE_16K'])
 
     ##1sd calling method: process an input waveform and return output waveform, then write to output_FRCRN_SE_16K.wav
-    output_wav = myClearVoice(input_path='samples/input2.wav', online_write=False)
+    output_wav = myClearVoice(input_path='samples/input.wav', online_write=False)
     myClearVoice.write(output_wav, output_path='samples/output_FRCRN_SE_16K.wav')
 
     ##2nd calling method: process all wav files in 'path_to_input_wavs/' and write outputs to 'path_to_output_wavs'

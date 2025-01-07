@@ -11,7 +11,19 @@ import numpy as np
 import os 
 import sys
 import librosa
+import mimetypes
 
+def is_audio_file(file_path):
+    """
+    Check if the given file_path is an audio file
+    Return True if it is an audio file, otherwise, return False
+    """
+    
+    mime_type, _ = mimetypes.guess_type(file_path)
+    if mime_type and mime_type.startswith('audio'):
+        return True
+    return False
+    
 def read_and_config_file(args, input_path, decode=0):
     """
     Reads and processes the input file or directory to extract audio file paths or configuration data.
@@ -27,7 +39,10 @@ def read_and_config_file(args, input_path, decode=0):
                            and optional condition audio paths.
     """
     processed_list = []  # Initialize list to hold processed file paths or configurations
-
+    
+    #The supported audio types are listed below (tested), but not limited to.
+    file_ext = ["wav", "aac", "ac3", "aiff", "flac", "m4a", "mp3", "ogg", "opus", "wma", "webm"]
+    
     if decode:
         if args.task == 'target_speaker_extraction':
             if args.network_reference.cue== 'lip':
@@ -54,13 +69,11 @@ def read_and_config_file(args, input_path, decode=0):
         # If decode is True, find audio files in a directory or single file
         if os.path.isdir(input_path):
             # Find all .wav files in the input directory
-            processed_list = librosa.util.find_files(input_path, ext="wav")
-            if len(processed_list) == 0:
-                # If no .wav files, look for .flac files
-                processed_list = librosa.util.find_files(input_path, ext="flac")
+            processed_list = librosa.util.find_files(input_path, ext=file_ext)
         else:
             # If it's a single file and it's a .wav or .flac, add to processed list
-            if input_path.lower().endswith(".wav") or input_path.lower().endswith(".flac"):
+            #if input_path.lower().endswith(".wav") or input_path.lower().endswith(".flac"):
+            if is_audio_file(input_path):
                 processed_list.append(input_path)
             else:
                 # Read file paths from the input text file (one path per line)

@@ -6,9 +6,14 @@ import torch
 import soundfile as sf
 import os
 import subprocess
+import librosa
 from tqdm import tqdm
+import numpy as np
+from pydub import AudioSegment
 from utils.decode import decode_one_audio
 from dataloader.dataloader import DataReader
+
+MAX_WAV_VALUE = 32768.0
 
 class SpeechModel:
     """
@@ -163,18 +168,30 @@ class SpeechModel:
                   If multi-speaker audio is processed, a list of truncated audio outputs per speaker is returned.
         """
         # Decode the audio using the loaded model on the given device (e.g., CPU or GPU)
-        output_audio = decode_one_audio(self.model, self.device, self.data['audio'], self.args)
-
-        # Ensure the decoded output matches the length of the input audio
-        if isinstance(output_audio, list):
-            # If multi-speaker audio (a list of outputs), truncate each speaker's audio to input length
+        output_audios = []
+        for i in range(len(self.data['audio'])):
+            output_audio = decode_one_audio(self.model, self.device, self.data['audio'][i], self.args)
+            # Ensure the decoded output matches the length of the input audio
+            if isinstance(output_audio, list):
+                # If multi-speaker audio (a list of outputs), truncate each speaker's audio to input length
+                for spk in range(self.args.num_spks):
+                    output_audio[spk] = output_audio[spk][:self.data['audio_len']]
+            else:
+                # Single output, truncate to input audio length
+                output_audio = output_audio[:self.data['audio_len']]
+            output_audios.append(output_audio)
+            
+        if isinstance(output_audios[0], list):
+            output_audios_np = []
             for spk in range(self.args.num_spks):
-                output_audio[spk] = output_audio[spk][:self.data['audio_len']]
+                output_audio_buf = []
+                for i in range(len(output_audios)):
+                    output_audio_buf.append(output_audios[i][spk])
+                    #output_audio_buf = np.vstack((output_audio_buf, output_audios[i][spk])).T
+                output_audios_np.append(np.array(output_audio_buf))
         else:
-            # Single output, truncate to input audio length
-            output_audio = output_audio[:self.data['audio_len']]
-    
-        return output_audio
+            output_audios_np = np.array(output_audios)
+        return output_audios_np
 
     def process(self, input_path, online_write=False, output_path=None):
         """
@@ -220,33 +237,38 @@ class SpeechModel:
                 for idx in tqdm(range(num_samples)):  # Loop over all audio samples
                     self.data = {}
                     # Read the audio, waveform ID, and audio length from the data reader
-                    input_audio, wav_id, input_len, scalar = data_reader[idx]
+                    input_audio, wav_id, input_len, scalars, audio_info = data_reader[idx]
                     # Store the input audio and metadata in self.data
                     self.data['audio'] = input_audio
                     self.data['id'] = wav_id
                     self.data['audio_len'] = input_len
+                    self.data.update(audio_info)
                     
                     # Perform the audio decoding/processing
-                    output_audio = self.decode()
+                    output_audios = self.decode()
 
                     # Perform audio renormalization
-                    if not isinstance(output_audio, list):
-                        output_audio = output_audio * scalar
+                    if not isinstance(output_audios, list):
+                        if len(scalars) > 1:
+                            for i in range(len(scalars)):
+                                output_audios[:,i] = output_audios[:,i] * scalars[i]
+                        else:
+                                output_audios = output_audios * scalars[0]
                         
                     if online_write:
                         # If online writing is enabled, save the output audio to files
-                        if isinstance(output_audio, list):
+                        if isinstance(output_audios, list):
                             # In case of multi-speaker output, save each speaker's output separately
                             for spk in range(self.args.num_spks):
-                                output_file = os.path.join(output_wave_dir, wav_id.replace('.wav', f'_s{spk+1}.wav'))
-                                sf.write(output_file, output_audio[spk], self.args.sampling_rate)
+                                output_file = os.path.join(output_wave_dir, wav_id.replace('.'+self.data['ext'], f'_s{spk+1}.'+self.data['ext']))
+                                self.write_audio(output_file, key=None, spk=spk, audio=output_audios)
                         else:
                             # Single-speaker or standard output
                             output_file = os.path.join(output_wave_dir, wav_id)
-                            sf.write(output_file, output_audio, self.args.sampling_rate)
+                            self.write_audio(output_file, key=None, spk=None, audio=output_audios)
                     else:
                         # If not writing to disk, store the output in the result dictionary
-                        self.result[wav_id] = output_audio
+                        self.result[wav_id] = output_audios
             
             # Return the processed results if not writing to disk
             if not online_write:
@@ -256,8 +278,71 @@ class SpeechModel:
                 else:
                     # Otherwise, return the entire result dictionary
                     return self.result
-    
 
+    def write_audio(self, output_path, key=None, spk=None, audio=None):
+        """
+        This function writes an audio signal to an output file, applying necessary transformations
+        such as resampling, channel handling, and format conversion based on the provided parameters
+        and the instance's internal settings.
+        
+        Args:
+            output_path (str): The file path where the audio will be saved.
+            key (str, optional): The key used to retrieve audio from the internal result dictionary
+                                  if audio is not provided.
+            spk (str, optional): A specific speaker identifier, used to extract a particular speaker's
+                                 audio from a multi-speaker dataset or result.
+            audio (numpy.ndarray, optional): A numpy array containing the audio data to be written.
+                                 If provided, key and spk are ignored.
+        """
+        
+        if audio is not None:
+            if spk is not None:
+                result_ = audio[spk]
+            else:
+                result_ = audio
+        else:
+            if spk is not None:
+                result_ = self.result[key][spk]
+            else:
+                result_ = self.result[key]
+                
+        if self.data['sample_rate'] != self.args.sampling_rate:
+            if self.data['channels'] == 2:
+                left_channel = librosa.resample(result_[0,:], orig_sr=self.args.sampling_rate, target_sr=self.data['sample_rate'])
+                right_channel = librosa.resample(result_[1,:], orig_sr=self.args.sampling_rate, target_sr=self.data['sample_rate'])
+                result = np.vstack((left_channel, right_channel)).T
+            else:
+                result = librosa.resample(result_[0,:], orig_sr=self.args.sampling_rate, target_sr=self.data['sample_rate'])
+        else:
+            if self.data['channels'] == 2:
+                left_channel = result_[0,:]
+                right_channel = result_[1,:]
+                result = np.vstack((left_channel, right_channel)).T
+            else:
+                result = result_[0,:]
+                
+        if self.data['sample_width'] == 4: ##32 bit float
+            MAX_WAV_VALUE = 2147483648.0
+            np_type = np.int32
+        elif self.data['sample_width'] == 2: ##16 bit int
+            MAX_WAV_VALUE = 32768.0
+            np_type = np.int16
+        else:
+            self.data['sample_width'] = 2 ##16 bit int
+            MAX_WAV_VALUE = 32768.0
+            np_type = np.int16
+                        
+        result = result * MAX_WAV_VALUE
+        result = result.astype(np_type)
+        audio_segment = AudioSegment(
+            result.tobytes(),  # Raw audio data as bytes
+            frame_rate=self.data['sample_rate'],  # Sample rate
+            sample_width=self.data['sample_width'],          # No. bytes per sample
+            channels=self.data['channels']               # No. channels
+        )
+        audio_format = 'ipod' if self.data['ext'] in ['m4a', 'aac'] else self.data['ext']
+        audio_segment.export(output_path, format=audio_format)
+                    
     def write(self, output_path, add_subdir=False, use_key=False):
         """
         Write the processed audio results to the specified output path.
@@ -302,19 +387,20 @@ class SpeechModel:
                 # If using keys, format filenames based on the result dictionary's keys (audio IDs)
                 if isinstance(self.result[key], list):  # For multi-speaker outputs
                     for spk in range(self.args.num_spks):
-                        sf.write(os.path.join(output_path, key.replace('.wav', f'_s{spk+1}.wav')),
-                                 self.result[key][spk], self.args.sampling_rate)
+                        output_file = os.path.join(output_path, key.replace('.'+self.data['ext'], f'_s{spk+1}.'+self.data['ext']))
+                        self.write_audio(output_file, key, spk)
                 else:
-                    sf.write(os.path.join(output_path, key), self.result[key], self.args.sampling_rate)
+                    output_file = os.path.join(output_path, key)
+                    self.write_audio(output_path, key)
             else:
                 # If not using keys, write audio to the specified output path directly
                 if isinstance(self.result[key], list):  # For multi-speaker outputs
                     for spk in range(self.args.num_spks):
-                        sf.write(output_path.replace('.wav', f'_s{spk+1}.wav'),
-                                 self.result[key][spk], self.args.sampling_rate)
+                        output_file = output_path.replace('.'+self.data['ext'], f'_s{spk+1}.'+self.data['ext'])
+                        self.write_audio(output_file, key, spk)
                 else:
-                    sf.write(output_path, self.result[key], self.args.sampling_rate)
-
+                    self.write_audio(output_path, key)
+                    
 # The model classes for specific sub-tasks
 
 class CLS_FRCRN_SE_16K(SpeechModel):

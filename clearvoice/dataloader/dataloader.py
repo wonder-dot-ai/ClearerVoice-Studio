@@ -11,14 +11,23 @@ import torch.utils.data as data
 import os 
 import sys
 sys.path.append(os.path.dirname(__file__))
-
+from pydub import AudioSegment
 from dataloader.misc import read_and_config_file
 import librosa
 import random
 EPS = 1e-6
-MAX_WAV_VALUE = 32768.0
+MAX_WAV_VALUE_16B = 32768.0
+MAX_WAV_VALUE_32B = 2147483648.0
 
-def audioread(path, sampling_rate):
+def get_file_extension(file_path):
+    """
+    Return an audio file extension
+    """
+    
+    _, ext = os.path.splitext(file_path)
+    return ext
+    
+def audioread_archieved(path, sampling_rate):
     """
     Reads an audio file from the specified path, normalizes the audio, 
     resamples it to the desired sampling rate (if necessary), and ensures it is single-channel.
@@ -55,6 +64,85 @@ def audioread(path, sampling_rate):
     
     # Return the processed audio data.
     return data, scalar
+    
+def read_audio(file_path):
+    """
+    Use AudioSegment to load audio from all supported audio input format
+    """
+    
+    try:
+        audio = AudioSegment.from_file(file_path)
+        return audio
+    except Exception as e:
+        print(f"Error loading file: {e}")
+        return None
+        
+def audioread(path, sampling_rate, use_norm):
+    """
+    Reads an audio file from the specified path, normalizes the audio,
+    resamples it to the desired sampling rate (if necessary), and ensures it is single-channel.
+
+    Parameters:
+    path (str): The file path of the audio file to be read.
+    sampling_rate (int): The target sampling rate for the audio.
+    use_norm (bool): The flag for specifying whether using input audio normalization
+
+    Returns:
+    numpy.ndarray: The processed audio data, normalized, resampled (if necessary),
+                   and converted to mono (if the input audio has multiple channels).
+    """
+    
+    # Read audio data and its sample rate from the file.
+    audio_info = {}
+    ext = get_file_extension(path).replace('.', '')
+    audio_info['ext']=ext
+    
+    try:
+        data = AudioSegment.from_file(path)
+    except Exception as e:
+        print(f"Error loading file: {e}")
+        return None
+        
+    data = read_audio(path)
+   
+    audio_info['sample_rate'] = data.frame_rate
+    audio_info['channels'] = data.channels
+    audio_info['sample_width'] = data.sample_width
+
+    data_array = np.array(data.get_array_of_samples())
+    if max(data_array) > MAX_WAV_VALUE_16B:
+        audio_np = data_array / MAX_WAV_VALUE_32B
+    else:
+        audio_np = data_array / MAX_WAV_VALUE_16B
+
+    audios = []
+    # Check if the audio is stereo
+    if audio_info['channels'] == 2:
+        audios.append(audio_np[::2])  # Even indices (left channel)
+        audios.append(audio_np[1::2])  # Odd indices (right channel)
+    else:
+        audios.append(audio_np)
+    
+    # Normalize the audio data.
+    audios_normed = []
+    scalars = []
+    for audio in audios:
+        if use_norm:
+            audio_normed, scalar = audio_norm(audio)
+            audios_normed.append(audio_normed)
+            scalars.append(scalar)
+        else:
+            audios_normed.append(audio)
+            scalars.append(1)
+    # Resample the audio if the sample rate is different from the target sampling rate.
+    if audio_info['sample_rate'] != sampling_rate:
+        index = 0
+        for audio_normed in audios_normed:
+            audios_normed[index] = librosa.resample(audio_normed, orig_sr=audio_info['sample_rate'], target_sr=sampling_rate)
+            index = index + 1
+    
+    # Return the processed audio data.
+    return audios_normed, scalars, audio_info
 
 def audio_norm(x):
     """
@@ -160,15 +248,22 @@ class DataReader(object):
         """
         # Extract the utterance ID from the file path (usually the filename).
         utt_id = path.split('/')[-1]
+        use_norm = False
         
+        #We suggest to use norm for 'FRCRN_SE_16K' and 'MossFormer2_SS_16K' models
+        if self.args.network in ['FRCRN_SE_16K','MossFormer2_SS_16K'] :
+            use_norm = True
+            
         # Read and normalize the audio data, converting it to float32 for processing.
-        data, scalar = audioread(path, self.sampling_rate)        
-        data = data.astype(np.float32)
-        # Reshape the data to ensure it's in the format [1, data_length].
-        inputs = np.reshape(data, [1, data.shape[0]])
+        audios_norm, scalars, audio_info = audioread(path, self.sampling_rate, use_norm)
+
+        for i in range(len(audios_norm)):
+            audios_norm[i] = audios_norm[i].astype(np.float32)
+            # Reshape the data to ensure it's in the format [1, data_length].
+            audios_norm[i] = np.reshape(audios_norm[i], [1, audios_norm[i].shape[0]])
         
         # Return the reshaped audio data, utterance ID, and the length of the original data.
-        return inputs, utt_id, data.shape[0], scalar
+        return audios_norm, utt_id, audios_norm[0].shape[1], scalars, audio_info
 
 class Wave_Processor(object):
     """
