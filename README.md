@@ -12,7 +12,7 @@
 ## News :fire:
 - [2025.1] ClearVoice now supports more audio formats including "wav", "aac", "ac3", "aiff", "flac", "m4a", "mp3", "ogg", "opus", "wma", "webm", etc. It also supports both mono and stereo channels with 16-bit or 32-bit precisions. A latest version of [ffmpeg](https://github.com/FFmpeg/FFmpeg) is required for audio codecs.  
 - [2024.12] Upload pre-trained models on ModelScope. User now can download the models from either [ModelScope](https://www.modelscope.cn/models/iic/ClearerVoice-Studio/summary) or [Huggingface](https://huggingface.co/alibabasglab)  
-- [2024.11] FRCRN speech denoiser has been used over **2.8 million** times on [ModelScope](https://modelscope.cn/models/iic/speech_frcrn_ans_cirm_16k)
+- [2024.11] FRCRN speech denoiser has been used over **2.9 million** times on [ModelScope](https://modelscope.cn/models/iic/speech_frcrn_ans_cirm_16k)
 - [2024.11] MossFormer speech separator has been used over **2.5 million** times on [ModelScope](https://modelscope.cn/models/iic/speech_mossformer_separation_temporal_8k)
 - [2024.11] Release of this repository
 - Upcoming: More tasks will be added to ClearVoice.
