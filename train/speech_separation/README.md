@@ -52,9 +52,10 @@ a. Use a pre-prepared toy [MiniLibriMix dataset](https://zenodo.org/records/3871
 b. Create your own dataset
 
 - WSJ0-2Mix dataset preparation: We assume you have purchased [WSJ0 speech dataset](https://catalog.ldc.upenn.edu/LDC93S6A)
-  - Step 1: Use the mixture generation scripts in [python format](https://github.com/mpariente/pywsj0-mix) or [matlab format](https://www.merl.com/research/highlights/deep-clustering/) to generate mixture datasets. Use the sampling rate either 8000Hz or 16000Hz.
-  - Step 2: Create scp files as formatted in `data/tr_wsj0_2mix_16k.scp` for train, validation, and test.
-  - Step 3: Replace the `tr_list` and `cv_list` paths for scp files in `config/train/MossFormer2_SS_16K.yaml`
+  - Step 1: Download [WHAM! noise dataset](https://my-bucket-a8b4b49c25c811ee9a7e8bba05fa24c7.s3.amazonaws.com/wham_noise.zip). Go to [this page](http://wham.whisper.ai/) for more information.
+  - Step 2: Use the mixture generation scripts in [python format](https://github.com/mpariente/pywsj0-mix) or [matlab format](https://www.merl.com/research/highlights/deep-clustering/) to generate mixture datasets. Use the sampling rate either 8000Hz or 16000Hz.
+  - Step 3: Create scp files as formatted in `data/tr_wsj0_2mix_16k.scp` for train, validation, and test.
+  - Step 4: Replace the `tr_list` and `cv_list` paths for scp files in `config/train/MossFormer2_SS_16K.yaml`
  
 - LibriMix dataset preparation: If you don't have WSJ0 dataset, we suggest you to download [LibriSpeech dataset](https://www.openslr.org/12) (only 'train-clean-360.tar.gz' is required) and use the following steps to create LibriMix dataset.
   - Step 1. Download [WHAM! noise dataset](https://my-bucket-a8b4b49c25c811ee9a7e8bba05fa24c7.s3.amazonaws.com/wham_noise.zip). Go to [this page](http://wham.whisper.ai/) for more information.
