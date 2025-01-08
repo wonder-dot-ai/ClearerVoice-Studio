@@ -47,15 +47,25 @@ pip install -r requirements.txt
 
 3. **Prepare Dataset**
 
-If you want to try an experimental training of the speech separation model, we suggest you to preapre the training and testing data as follows:
+a. Use a pre-prepared toy [MiniLibriMix dataset](https://zenodo.org/records/3871592). It contains a train set of 800 mixtures and a validation set of 200 mixtures.
 
-- Step 1: Download the WSJ0 speech dataset
+b. Create your own dataset
 
-- Step 2: Use the mixture generation scripts in [python format](https://github.com/mpariente/pywsj0-mix) or [matlab format](https://www.merl.com/research/highlights/deep-clustering/) to generate mixture datasets. Use the sampling rate either 8000Hz or 16000Hz.
-
-- Step 3: Create scp files as formatted in `data/tr_wsj0_2mix_16k.scp` for train, validation, and test.
-
-- Step 4: Replace the `tr_list` and `cv_list` paths for scp files in `config/train/MossFormer2_SS_16K.yaml`
+- WSJ0-2Mix dataset preparation: We assume you have purchased [WSJ0 speech dataset](https://catalog.ldc.upenn.edu/LDC93S6A)
+  - Step 1: Use the mixture generation scripts in [python format](https://github.com/mpariente/pywsj0-mix) or [matlab format](https://www.merl.com/research/highlights/deep-clustering/) to generate mixture datasets. Use the sampling rate either 8000Hz or 16000Hz.
+  - Step 2: Create scp files as formatted in `data/tr_wsj0_2mix_16k.scp` for train, validation, and test.
+  - Step 3: Replace the `tr_list` and `cv_list` paths for scp files in `config/train/MossFormer2_SS_16K.yaml`
+ 
+- LibriMix dataset preparation: If you don't have WSJ0 dataset, we suggest you to download [LibriSpeech dataset](https://www.openslr.org/12) (only 'train-clean-360.tar.gz' is required) and use the following steps to create LibriMix dataset.
+  - Step 1. Download [WHAM! noise dataset](https://my-bucket-a8b4b49c25c811ee9a7e8bba05fa24c7.s3.amazonaws.com/wham_noise.zip). Go to [this page](http://wham.whisper.ai/) for more information.
+  - Step 2. Clone the [repo](https://github.com/JorisCos/LibriMix) and run the main script : [generate_librimix.sh](https://github.com/JorisCos/LibriMix/blob/master/generate_librimix.sh)
+    ```sh
+    git clone https://github.com/JorisCos/LibriMix
+    cd LibriMix 
+    ./generate_librimix.sh storage_dir
+    ```sh
+  - Step 3: Create scp files as formatted in `data/tr_wsj0_2mix_16k.scp` for train, validation, and test.
+  - Step 4: Replace the `tr_list` and `cv_list` paths for scp files in `config/train/MossFormer2_SS_16K.yaml`
 
 4. **Start Training**
 
