@@ -249,6 +249,9 @@ class DataReader(object):
         # Read and normalize the audio data, converting it to float32 for processing.
         audios_norm, scalars, audio_info = audioread(path, self.sampling_rate, use_norm)
 
+        if self.args.network in ['MossFormer2_SR_48K']:
+            audio_info['sample_rate'] = self.sampling_rate
+            
         for i in range(len(audios_norm)):
             audios_norm[i] = audios_norm[i].astype(np.float32)
             # Reshape the data to ensure it's in the format [1, data_length].

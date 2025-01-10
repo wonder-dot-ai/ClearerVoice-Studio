@@ -1,4 +1,5 @@
 import argparse
+import json
 import yamlargparse
 import torch.nn as nn
 
@@ -40,8 +41,8 @@ class network_wrapper(nn.Module):
         # Model-specific settings
         parser.add_argument('--network', type=str, help='Select SE models: FRCRN_SE_16K, MossFormer2_SE_48K')
         parser.add_argument('--sampling-rate', dest='sampling_rate', type=int, default=16000, help='Sampling rate')
-        parser.add_argument('--one-time-decode-length', dest='one_time_decode_length', type=int, default=60, help='Max segment length for one-pass decoding')
-        parser.add_argument('--decode-window', dest='decode_window', type=int, default=1, help='Decoding chunk size')
+        parser.add_argument('--one-time-decode-length', dest='one_time_decode_length', type=float, default=60.0, help='Max segment length for one-pass decoding')
+        parser.add_argument('--decode-window', dest='decode_window', type=float, default=1.0, help='Decoding chunk size')
 
         # FFT parameters for feature extraction
         parser.add_argument('--window-len', dest='win_len', type=int, default=400, help='Window length for framing')
@@ -75,8 +76,8 @@ class network_wrapper(nn.Module):
         parser.add_argument('--network', type=str, help='Select SS models: MossFormer2_SS_16K')
         parser.add_argument('--sampling-rate', dest='sampling_rate', type=int, default=16000, help='Sampling rate')
         parser.add_argument('--num-spks', dest='num_spks', type=int, default=2, help='Number of speakers to separate')
-        parser.add_argument('--one-time-decode-length', dest='one_time_decode_length', type=int, default=60, help='Max segment length for one-pass decoding')
-        parser.add_argument('--decode-window', dest='decode_window', type=int, default=1, help='Decoding chunk size')
+        parser.add_argument('--one-time-decode-length', dest='one_time_decode_length', type=float, default=60.0, help='Max segment length for one-pass decoding')
+        parser.add_argument('--decode-window', dest='decode_window', type=float, default=1.0, help='Decoding chunk size')
 
         # Encoder settings
         parser.add_argument('--encoder_kernel-size', dest='encoder_kernel_size', type=int, default=16, help='Kernel size for Conv1D encoder')
@@ -88,6 +89,52 @@ class network_wrapper(nn.Module):
         
         # Parse arguments from the config file
         self.args = parser.parse_args(['--config', self.config_path])
+    
+    def load_config_json(self, config_json_path):
+        with open(config_json_path, 'r') as file:
+            return json.load(file)
+      
+    def combine_config_and_args(self, json_config, args):
+        # Convert argparse.Namespace to a dictionary
+        args_dict = vars(args)
+        
+        # Remove `config` key from args_dict (it's the path to the JSON file)
+        args_dict.pop("config", None)
+        
+        # Combine JSON config and args_dict, prioritizing args_dict
+        combined_config = {**json_config, **{k: v for k, v in args_dict.items() if v is not None}}
+        return combined_config
+    
+    def load_args_sr(self):
+        """
+        Loads the arguments for the speech super-resolution task using a YAML config file.
+        Sets the configuration path and parses all the required parameters such as
+        input/output paths, model settings, and FFT parameters.
+        """
+        self.config_path = 'config/inference/' + self.model_name + '.yaml'
+        parser = yamlargparse.ArgumentParser("Settings")
+
+        # General model and inference settings
+        parser.add_argument('--config', help='Config file path', action=yamlargparse.ActionConfigFile)
+        parser.add_argument('--config_json', type=str, help='Path to the config.json file')
+        parser.add_argument('--mode', type=str, default='inference', help='Modes: train or inference')
+        parser.add_argument('--checkpoint-dir', dest='checkpoint_dir', type=str, default='checkpoints/FRCRN_SE_16K', help='Checkpoint directory')
+        parser.add_argument('--input-path', dest='input_path', type=str, help='Path for noisy audio input')
+        parser.add_argument('--output-dir', dest='output_dir', type=str, help='Directory for enhanced audio output')
+        parser.add_argument('--use-cuda', dest='use_cuda', default=1, type=int, help='Enable CUDA (1=True, 0=False)')
+        parser.add_argument('--num-gpu', dest='num_gpu', type=int, default=1, help='Number of GPUs to use')
+
+        # Model-specific settings
+        parser.add_argument('--network', type=str, help='Select SE models: FRCRN_SE_16K, MossFormer2_SE_48K')
+        parser.add_argument('--sampling-rate', dest='sampling_rate', type=int, default=16000, help='Sampling rate')
+        parser.add_argument('--one-time-decode-length', dest='one_time_decode_length', type=float, default=60.0, help='Max segment length for one-pass decoding')
+        parser.add_argument('--decode-window', dest='decode_window', type=float, default=1.0, help='Decoding chunk size')
+
+        # Parse arguments from the config file
+        self.args = parser.parse_args(['--config', self.config_path])
+        json_config = self.load_config_json(self.args.config_json)
+        self.args = self.combine_config_and_args(json_config, self.args)
+        self.args = argparse.Namespace(**self.args)
 
     def load_args_tse(self):
         """
@@ -140,6 +187,8 @@ class network_wrapper(nn.Module):
             self.load_args_se()  # Load arguments for speech enhancement
         elif task == 'speech_separation':
             self.load_args_ss()  # Load arguments for speech separation
+        elif task == 'speech_super_resolution':
+            self.load_args_sr()  #load aurguments for speech super-resolution
         elif task == 'target_speaker_extraction':
             self.load_args_tse()  # Load arguments for target speaker extraction
         else:
@@ -158,7 +207,10 @@ class network_wrapper(nn.Module):
             self.network = CLS_FRCRN_SE_16K(self.args)  # Load FRCRN model
         elif self.args.network == 'MossFormer2_SE_48K':
             from networks import CLS_MossFormer2_SE_48K
-            self.network = CLS_MossFormer2_SE_48K(self.args)  # Load MossFormer2 model
+            self.network = CLS_MossFormer2_SE_48K(self.args)  # Load MossFormer2_SE model
+        elif self.args.network == 'MossFormer2_SR_48K':
+            from networks import CLS_MossFormer2_SR_48K
+            self.network = CLS_MossFormer2_SR_48K(self.args)  #Load MossFormer2_SR model
         elif self.args.network == 'MossFormerGAN_SE_16K':
             from networks import CLS_MossFormerGAN_SE_16K
             self.network = CLS_MossFormerGAN_SE_16K(self.args)  # Load MossFormerGAN model

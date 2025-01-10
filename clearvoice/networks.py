@@ -3,6 +3,7 @@ Authors: Shengkui Zhao, Zexu Pan
 """
 
 import torch
+import torch.nn as nn
 import soundfile as sf
 import os
 import subprocess
@@ -61,6 +62,7 @@ class SpeechModel:
         self.model = None
         self.name = None
         self.data = {}
+        self.print = False
 
     def get_free_gpu(self):
         """
@@ -105,12 +107,12 @@ class SpeechModel:
             
     def load_model(self):
         """
-        Loads a pre-trained model checkpoint from a specified directory. It checks for 
-        the best model ('last_best_checkpoint') or the most recent checkpoint ('last_checkpoint') 
-        in the checkpoint directory. If a model is found, it loads the model state into the 
-        current model instance.
+        Loads a pre-trained model checkpoints from a specified directory. It checks for
+        the best model ('last_best_checkpoint') in the checkpoint directory. If a model is
+        found, it loads the model state into the current model instance.
 
-        If no checkpoint is found, it prints a warning message.
+        If no checkpoint is found, it will try to download the model from huggingface.
+        If the downloading fails, it prints a warning message.
 
         Steps:
         - Search for the best model checkpoint or the most recent one.
@@ -128,22 +130,31 @@ class SpeechModel:
                 print(f'Warning: Downloading model {self.name} is not successful. Please try again or manually download from https://huggingface.co/alibabasglab/{self.name}/tree/main !')
                 return
 
-        # Read the model's checkpoint name from the file
-        with open(best_name, 'r') as f:
-            model_name = f.readline().strip()
-        
-        # Form the full path to the model's checkpoint
-        checkpoint_path = os.path.join(self.args.checkpoint_dir, model_name)
-        
+        if isinstance(self.model, nn.ModuleList):
+            with open(best_name, 'r') as f:
+                model_name = f.readline().strip()
+                checkpoint_path = os.path.join(self.args.checkpoint_dir, model_name)
+                self._load_model(self.model[0], checkpoint_path, model_key='mossformer')
+                model_name = f.readline().strip()
+                checkpoint_path = os.path.join(self.args.checkpoint_dir, model_name)
+                self._load_model(self.model[1], checkpoint_path, model_key='generator')
+        else:
+            # Read the model's checkpoint name from the file
+            with open(best_name, 'r') as f:
+                model_name = f.readline().strip()
+            # Form the full path to the model's checkpoint
+            checkpoint_path = os.path.join(self.args.checkpoint_dir, model_name)
+            self._load_model(self.model, checkpoint_path, model_key='model')
+
+    def _load_model(self, model, checkpoint_path, model_key=None):
         # Load the checkpoint file into memory (map_location ensures compatibility with different devices)
         checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
-
         # Load the model's state dictionary (weights and biases) into the current model
-        if 'model' in checkpoint:
-            pretrained_model = checkpoint['model']
+        if model_key in checkpoint:
+            pretrained_model = checkpoint[model_key]
         else:
             pretrained_model = checkpoint
-        state = self.model.state_dict()
+        state = model.state_dict()
         for key in state.keys():
             if key in pretrained_model and state[key].shape == pretrained_model[key].shape:
                 state[key] = pretrained_model[key]
@@ -152,8 +163,7 @@ class SpeechModel:
             elif 'module.'+key in pretrained_model and state[key].shape == pretrained_model['module.'+key].shape:
                  state[key] = pretrained_model['module.'+key]
             elif self.print: print(f'{key} not loaded')
-        self.model.load_state_dict(state)
-        #print(f'Successfully loaded {model_name} for decoding')
+        model.load_state_dict(state)
 
     def decode(self):
         """
@@ -462,6 +472,41 @@ class CLS_MossFormer2_SE_48K(SpeechModel):
         
         # Set the model to evaluation mode (no gradient calculation)
         self.model.eval()
+
+class CLS_MossFormer2_SR_48K(SpeechModel):
+    """
+    A subclass of SpeechModel that implements the MossFormer2 architecture for
+    48 kHz speech super-resolution.
+    
+    Args:
+        args (Namespace): The argument parser containing model configurations and paths.
+    """
+
+    def __init__(self, args):
+        # Initialize the parent SpeechModel class
+        super(CLS_MossFormer2_SR_48K, self).__init__(args)
+        
+        # Import the MossFormer2 speech enhancement model for 48 kHz
+        from models.mossformer2_sr.mossformer2_sr_wrapper import MossFormer2_SR_48K
+        
+        # Initialize the model
+        self.model = nn.ModuleList()
+        self.model.append(MossFormer2_SR_48K(args).model_m)
+        self.model.append(MossFormer2_SR_48K(args).model_g)
+        self.name = 'MossFormer2_SR_48K'
+        
+        # Load pre-trained model checkpoint
+        self.load_model()
+        
+        # Move model to the appropriate device (GPU/CPU)
+        if args.use_cuda == 1:
+            for model in self.model:
+                model.to(self.device)
+        
+        # Set the model to evaluation mode (no gradient calculation)
+        for model in self.model:
+            model.eval()
+        self.model[1].remove_weight_norm()
 
 class CLS_MossFormerGAN_SE_16K(SpeechModel):
     """
