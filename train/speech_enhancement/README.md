@@ -55,6 +55,7 @@ conda create -n ClearerVoice-Studio python=3.8
 conda activate ClearerVoice-Studio
 pip install -r requirements.txt
 ```
+Notice: Other higher python versions such as python 3.12.1 should also be supported.
 
 3. **Prepare Dataset**
    
