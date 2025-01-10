@@ -36,7 +36,8 @@ For advanced researchers and developers, we provide model finetune and training 
 
 - **Task 1: [Speech enhancement](train/speech_enhancement)** (16kHz & 48kHz)
 - **Task 2: [Speech separation](train/speech_separation)** (8kHz & 16kHz)
-- **Task 3: [Target speaker extraction](train/target_speaker_extraction)** 
+- **Task 2: [Speech super-resolution](comming soon)** (48kHz)
+- **Task 4: [Target speaker extraction](train/target_speaker_extraction)** 
   - **Sub-Task 1: Audio-only Speaker Extraction Conditioned on a Reference Speech** (8kHz)
   - **Sub-Task 2: Audio-visual Speaker Extraction Conditioned on Face (Lip) Recording** (16kHz)
   - **Sub-Task 3: Audio-visual Speaker Extraction Conditioned on Body Gestures** (16kHz)
