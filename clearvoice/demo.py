@@ -5,6 +5,7 @@ if True:
     myClearVoice = ClearVoice(task='speech_enhancement', model_names=['MossFormer2_SE_48K'])
 
     ##1sd calling method: process the waveform from input file and return output waveform, then write to output_MossFormer2_SE_48K_xxx with the same audio format
+    '''
     output_wav = myClearVoice(input_path='samples/input.wav', online_write=False)
     myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_input.wav')
     output_wav = myClearVoice(input_path='samples/speech2.wav', online_write=False)
@@ -21,8 +22,10 @@ if True:
     myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech2.aac')
     output_wav = myClearVoice(input_path='samples/speech2.aiff', online_write=False)
     myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SE_48K_speech2.aiff')
-    
+    '''
     ##2nd calling method: process all wav files in 'path_to_input_wavs/' and write outputs to 'path_to_output_wavs'
+    myClearVoice(input_path='samples/replaced2', online_write=True, output_path='samples/replaced2_enh')
+        
     myClearVoice(input_path='samples/path_to_input_wavs', online_write=True, output_path='samples/path_to_output_wavs')
 
     ##3rd calling method: process wav files listed in .scp file, and write outputs to 'path_to_output_wavs_scp/'
