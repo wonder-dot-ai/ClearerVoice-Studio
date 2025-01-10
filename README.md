@@ -11,7 +11,7 @@
 
 ## News :fire:
 - Upcoming: More tasks will be added to ClearVoice.
-- [2025.1] ClearVoice now supports speech super-resolution. It enhances the percetual quality of speech signals by converting low-resolution (effective sampling rate >= 16000 Hz) audio to high-resolution (sampling rate = 48000 Hz) audio. 
+- [2025.1] ClearVoice now offers speech super-resolution, also known as bandwidth expansion. This feature improves the perceptual quality of speech by converting low-resolution audio (with an effective sampling rate of at least 16,000 Hz) into high-resolution audio with a sampling rate of 48,000 Hz.
 - [2025.1] ClearVoice now supports more audio formats including "wav", "aac", "ac3", "aiff", "flac", "m4a", "mp3", "ogg", "opus", "wma", "webm", etc. It also supports both mono and stereo channels with 16-bit or 32-bit precisions. A latest version of [ffmpeg](https://github.com/FFmpeg/FFmpeg) is required for audio codecs.  
 - [2024.12] Upload pre-trained models on ModelScope. User now can download the models from either [ModelScope](https://www.modelscope.cn/models/iic/ClearerVoice-Studio/summary) or [Huggingface](https://huggingface.co/alibabasglab)  
 - [2024.11] Our FRCRN speech denoiser has been used over **2.9 million** times on [ModelScope](https://modelscope.cn/models/iic/speech_frcrn_ans_cirm_16k)
