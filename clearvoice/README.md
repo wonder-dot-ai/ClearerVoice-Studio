@@ -35,7 +35,7 @@ git clone https://github.com/modelscope/ClearerVoice-Studio.git
 
 ``` sh
 cd ClearerVoice-Studio
-conda create -n ClearerVoice-Studio python=3.8
+conda create -n ClearerVoice-Studio python=3.12.1
 conda activate ClearerVoice-Studio
 pip install -r requirements.txt
 ```
