@@ -40,6 +40,8 @@ conda activate ClearerVoice-Studio
 pip install -r requirements.txt
 ```
 
+It should also work for python 3.8 or 3.9!
+
 3. **Run Demo**
 
 ``` sh
