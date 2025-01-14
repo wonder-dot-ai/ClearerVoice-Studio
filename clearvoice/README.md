@@ -35,12 +35,13 @@ git clone https://github.com/modelscope/ClearerVoice-Studio.git
 
 ``` sh
 cd ClearerVoice-Studio
-conda create -n ClearerVoice-Studio python=3.12.1
+conda create -n ClearerVoice-Studio python=3.8
 conda activate ClearerVoice-Studio
 pip install -r requirements.txt
 ```
 
-It should also work for python 3.8 or 3.9!
+It should also work for python 3.9, 3.10 and 3.12! 
+> **Note:** 在ubuntu和windows安装过程中，如果遇到关于c++构建环境的前置安装以及pip setuptools wheel的工具更新问题，请自行手动安装解决 （感谢@RichardQin1）。
 
 3. **Run Demo**
 
