@@ -4,7 +4,7 @@
 
 <strong>ClearerVoice-Studio</strong> is an open-source, AI-powered speech processing toolkit designed for researchers, developers, and end-users. It provides capabilities of speech enhancement, speech separation, speech super-resolution, target speaker extraction, and more. The toolkit provides state-of-the-art pre-trained models, along with training and inference scripts, all accessible from this repository.
  
-#### 👉🏻[ClearVoice Demo](https://huggingface.co/spaces/alibabasglab/ClearVoice)👈🏻  | 👉🏻[SpeechScore Demo](https://huggingface.co/spaces/alibabasglab/SpeechScore)👈🏻
+#### 👉🏻[ClearVoice Demo](https://huggingface.co/spaces/alibabasglab/ClearVoice)👈🏻  | 👉🏻[Speech Super-Resolution Demo](https://huggingface.co/spaces/alibabasglab/ClearVoice-SR) ｜ 👉🏻[SpeechScore Demo](https://huggingface.co/spaces/alibabasglab/SpeechScore)👈🏻
 
 ---
 ![GitHub Repo stars](https://img.shields.io/github/stars/modelscope/ClearerVoice-Studio) Please support our community project 💖 by starring it on GitHub 加⭐支持 🙏 
