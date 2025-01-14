@@ -5,8 +5,8 @@ if True:
     myClearVoice = ClearVoice(task='speech_super_resolution', model_names=['MossFormer2_SR_48K'])
 
     ##1sd calling method: process the waveform from input file and return output waveform, then write to output_MossFormer2_SR_48K_xxx with the same audio format
-    output_wav = myClearVoice(input_path='samples/input_sr.wav', online_write=False)
-    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SR_48K_input_sr.wav')
+    output_wav = myClearVoice(input_path='samples/input_sr_8k.wav', online_write=False)
+    myClearVoice.write(output_wav, output_path='samples/output_MossFormer2_SR_48K_input_sr_8k.wav')
     
     ##2nd calling method: process all wav files in 'path_to_input_wavs_sr/' and write outputs to 'path_to_output_wavs'
     myClearVoice(input_path='samples/path_to_input_wavs_sr', online_write=True, output_path='samples/path_to_output_wavs')
