@@ -13,6 +13,8 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 from pydub import AudioSegment
 from dataloader.misc import read_and_config_file, get_file_extension
+from datasets import load_dataset
+from pathlib import Path
 import librosa
 import random
 EPS = 1e-6
@@ -176,89 +178,82 @@ def audio_norm(x):
     # Return the doubly normalized audio signal.
     return x, 1/(scalar * scalarx + EPS)
 
-class DataReader(object):
-    """
-    A class for reading audio data from a list of files, normalizing it, 
-    and extracting features for further processing. It supports extracting 
-    features from each file, reshaping the data, and returning metadata 
-    like utterance ID and data length.
-
-    Parameters:
-    args: Arguments containing the input path and target sampling rate.
-
-    Attributes:
-    file_list (list): A list of audio file paths to process.
-    sampling_rate (int): The target sampling rate for audio files.
-    """
-
+class DataReader:
     def __init__(self, args):
-        # Read and configure the file list from the input path provided in the arguments.
-        # The file list is decoded, if necessary.
-        self.file_list = read_and_config_file(args, args.input_path, decode=True)
-        
-        # Store the target sampling rate.
-        self.sampling_rate = args.sampling_rate
-
-        # Store the args file
         self.args = args
+        self.sampling_rate = args.sampling_rate
+        self.dataset_name = args.input_path
+        self.split = "train"
+        try:
+            self.dataset = load_dataset(
+                self.dataset_name, split=self.split, streaming=True
+            )
+        except Exception as e:
+            raise ValueError(
+                f"Error loading Hugging Face Dataset: {e}. Ensure '{self.dataset_name}' is correct."
+            )
 
+    def __iter__(self):
+        for index, item in enumerate(self.dataset):
+            yield self.extract_feature(item, index)
+        
     def __len__(self):
-        """
-        Returns the number of audio files in the file list.
-
-        Returns:
-        int: Number of files to process.
-        """
-        return len(self.file_list)
+        raise TypeError("IterableDataset doesn't have length")
 
     def __getitem__(self, index):
-        """
-        Retrieves the features of the audio file at the given index.
-
-        Parameters:
-        index (int): Index of the file in the file list.
-
-        Returns:
-        tuple: Features (inputs, utterance ID, data length) for the selected audio file.
-        """
-        if self.args.task == 'target_speaker_extraction':
-            if self.args.network_reference.cue== 'lip':
-                return self.file_list[index]
-        return self.extract_feature(self.file_list[index])
-
-    def extract_feature(self, path):
-        """
-        Extracts features from the given audio file path.
-
-        Parameters:
-        path (str): The file path of the audio file.
-
-        Returns:
-        inputs (numpy.ndarray): Reshaped audio data for further processing.
-        utt_id (str): The unique identifier of the audio file, usually the filename.
-        length (int): The length of the original audio data.
-        """
-        # Extract the utterance ID from the file path (usually the filename).
-        utt_id = path.split('/')[-1]
-        use_norm = False
+        raise TypeError("IterableDataset doesn't support indexing")
         
-        #We suggest to use norm for 'FRCRN_SE_16K' and 'MossFormer2_SS_16K' models
-        if self.args.network in ['FRCRN_SE_16K','MossFormer2_SS_16K'] :
-            use_norm = True
-            
-        # Read and normalize the audio data, converting it to float32 for processing.
-        audios_norm, scalars, audio_info = audioread(path, self.sampling_rate, use_norm)
 
-        if self.args.network in ['MossFormer2_SR_48K']:
-            audio_info['sample_rate'] = self.sampling_rate
-            
+    def extract_feature(self, item, index):
+        use_norm = self.args.network in ["FRCRN_SE_16K", "MossFormer2_SS_16K"]
+
+        try:
+            utt_id = f"{Path(item['audio']['path']).stem}.wav"
+        except (KeyError, TypeError):
+            utt_id = f"sample_{index}"
+
+        audio_array = item["audio"]["array"]
+        sampling_rate_hf = item["audio"]["sampling_rate"]
+        audios_norm, scalars, audio_info = self.process_hf_audio_array(
+            audio_array, sampling_rate_hf, self.sampling_rate, use_norm
+        )
+
+        if self.args.network == "MossFormer2_SR_48K":
+            audio_info["sample_rate"] = self.sampling_rate
+
         for i in range(len(audios_norm)):
             audios_norm[i] = audios_norm[i].astype(np.float32)
-            # Reshape the data to ensure it's in the format [1, data_length].
             audios_norm[i] = np.reshape(audios_norm[i], [1, audios_norm[i].shape[0]])
-        
-        # Return the reshaped audio data, utterance ID, and the length of the original data.
+
         return audios_norm, utt_id, audios_norm[0].shape[1], scalars, audio_info
+
+    def process_hf_audio_array(self, audio_array, original_sr, target_sr, use_norm):
+        audio_np = np.array(audio_array)
+        audios = [audio_np]
+
+        audios_normed, scalars = [], []
+        for audio in audios:
+            if use_norm:
+                audio_normed, scalar = audio_norm(audio)
+                audios_normed.append(audio_normed)
+                scalars.append(scalar)
+            else:
+                audios_normed.append(audio)
+                scalars.append(1)
+
+        if original_sr != target_sr:
+            for i in range(len(audios_normed)):
+                audios_normed[i] = librosa.resample(
+                    audios_normed[i], orig_sr=original_sr, target_sr=target_sr
+                )
+
+        audio_info = {
+            "sample_rate": target_sr,
+            "channels": 1,
+            "sample_width": 2,
+            "ext": "wav",
+        }
+        return audios_normed, scalars, audio_info
 
 class Wave_Processor(object):
     """
@@ -590,4 +585,3 @@ def get_dataloader(args, data_type):
     
     # Return both the sampler and DataLoader (generator).
     return sampler, generator
-
