@@ -234,7 +234,6 @@ class SpeechModel:
             if not os.path.isdir(output_wave_dir):
                 os.makedirs(output_wave_dir)
         
-        num_samples = len(data_reader)  # Get the total number of samples to process
         print(f'Running {self.name} ...')  # Display the model being used
 
         if self.args.task == 'target_speaker_extraction':
@@ -244,10 +243,8 @@ class SpeechModel:
         else:
             # Disable gradient calculation for better efficiency during inference
             with torch.no_grad():
-                for idx in tqdm(range(num_samples)):  # Loop over all audio samples
+                for input_audio, wav_id, input_len, scalars, audio_info in tqdm(data_reader):  # Loop over all audio samples
                     self.data = {}
-                    # Read the audio, waveform ID, and audio length from the data reader
-                    input_audio, wav_id, input_len, scalars, audio_info = data_reader[idx]
                     # Store the input audio and metadata in self.data
                     self.data['audio'] = input_audio
                     self.data['id'] = wav_id
